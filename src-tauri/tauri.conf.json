@@ -1,0 +1,51 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "CrumusiX",
+  "version": "0.1.0",
+  "identifier": "com.zech.crumusix",
+  "build": {
+    "frontendDist": "../src"
+  },
+  "app": {
+    "withGlobalTauri": true,
+    "windows": [
+      {
+        "label": "main",
+        "title": "CrumusiX",
+        "width": 1100,
+        "height": 720,
+        "decorations": false,
+        "additionalBrowserArgs": "--js-flags=--max-old-space-size=512 --gc-interval=100 --disable-gpu-shader-disk-cache"
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' asset: https: data:; media-src 'self' asset: https:; frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com; connect-src 'self' ipc: http://127.0.0.1:8888 https://accounts.spotify.com https://api.spotify.com;",
+      "assetProtocol": {
+        "enable": true,
+        "scope": {
+          "allow": [
+            "$CACHE/**/*",
+            "$CACHE/com.zech.crumusix/**/*",
+            "$HOME/.cache/**/*",
+            "$HOME/.cache/com.zech.crumusix/**/*",
+            "$HOME/Music/**/*",
+            "/home/zech/.cache/**/*",
+            "/home/zech/.cache/com.zech.crumusix/**/*"
+          ],
+          "requireLiteralLeadingDot": false
+        }
+      }
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ]
+  }
+}

@@ -1,0 +1,711 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CrumusiX — Premium Music Player</title>
+  <link rel="stylesheet" href="styles.css" />
+
+  <!-- Premium Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet">
+  <!-- Main JS entrypoint -->
+  <script type="module" src="/main.js" defer></script>
+</head>
+
+<body>
+  <!-- Premium Glassmorphic Dashboard Window -->
+  <div class="app-container">
+
+    <!-- Top Title Bar (Custom styled, native-like) -->
+    <div class="window-titlebar">
+      <div class="brand">
+        <img class="brand-icon" src="assets/icon.png" alt="CrumusiX" style="width: 16px; height: 16px; border-radius: 4px; object-fit: contain; margin-right: 6px;" />
+        <span class="brand-name">CrumusiX</span>
+      </div>
+      <div class="window-controls">
+        <button id="win-miniplayer" class="ctrl-btn" title="Toggle Mini Player (Ctrl+Shift+M)">
+          <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none">
+            <rect x="3" y="5" width="18" height="14" rx="2" ry="2"></rect>
+            <rect x="13" y="11" width="6" height="6" rx="1" ry="1"></rect>
+          </svg>
+        </button>
+        <button id="win-minimize" class="ctrl-btn" title="Minimize">
+          <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none">
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+        </button>
+        <button id="win-maximize" class="ctrl-btn" title="Maximize">
+          <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+          </svg>
+        </button>
+        <button id="win-close" class="ctrl-btn close" title="Close">
+          <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- App Workspace Panel -->
+    <div class="app-workspace">
+
+      <!-- Sidebar Navigation -->
+      <aside class="app-sidebar">
+        <nav class="nav-menu">
+          <button class="nav-item active" data-screen="home">
+            <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+              <polyline points="9 22 9 12 15 12 15 22"></polyline>
+            </svg>
+            <span>Listen Now</span>
+          </button>
+          <button class="nav-item" data-screen="search">
+            <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"
+              stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <span>Search</span>
+          </button>
+          <button class="nav-item" data-screen="playlists">
+            <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 18V5l12-2v13"></path>
+              <circle cx="6" cy="18" r="3"></circle>
+              <circle cx="18" cy="16" r="3"></circle>
+            </svg>
+            <span>Playlists</span>
+          </button>
+          <button class="nav-item" data-screen="spotify-connect">
+            <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+              <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+            </svg>
+            <span class="spotify-badge">Spotify</span>
+          </button>
+          <button class="nav-item" data-screen="library">
+            <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+            </svg>
+            <span>Local Library</span>
+          </button>
+          <button class="nav-item" data-screen="settings">
+            <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"
+              stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="3"></circle>
+              <path
+                d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z">
+              </path>
+            </svg>
+            <span>Settings</span>
+          </button>
+        </nav>
+
+        <!-- Sidebar Artwork Hero -->
+        <div class="sidebar-artwork-container">
+          <img
+            src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23121426'><rect width='100%25' height='100%25' fill='%23121426'/><circle cx='12' cy='12' r='7' fill='none' stroke='%23a855f7' stroke-width='2'/><circle cx='12' cy='12' r='2' fill='%23a855f7'/><path d='M12 5v7' stroke='%23a855f7' stroke-width='2' stroke-linecap='round'/></svg>"
+            id="sidebar-artwork" class="sidebar-artwork-disc" />
+        </div>
+      </aside>
+
+      <!-- Main Display Screens -->
+      <main class="app-display">
+
+        <!-- SCREEN: Home / Dashboard -->
+        <section id="screen-home" class="display-screen active">
+          <div class="welcome-header">
+            <h1>Listen Now</h1>
+            <p>Your personalized portal to hybrid Spotify & YouTube music.</p>
+          </div>
+
+          <div class="dashboard-grid">
+            <div class="dashboard-card card-spotify">
+              <div class="card-badge">Engine Active</div>
+              <h3>Spotify Premium</h3>
+              <p>Stream high-fidelity Spotify tracks directly via native core audio session.</p>
+              <button class="action-btn spotify-connect-trigger">Manage Auth Settings</button>
+            </div>
+            <div class="dashboard-card card-youtube">
+              <div class="card-badge">Engine Active</div>
+              <h3>Global Music Engine</h3>
+              <p>Access live streams, covers, and tracks via high-performance scrape search.</p>
+              <button class="action-btn go-search-trigger">Search YouTube Catalog</button>
+            </div>
+          </div>
+
+          <div class="recent-section">
+            <div class="section-title-row">
+              <h2>Recent Listening History</h2>
+            </div>
+            <div class="recent-list-container">
+              <div class="recent-list" id="recent-tracks-container">
+                <div class="empty-state">No tracks played yet. Search above to start!</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- SCREEN: Search Workspace -->
+        <section id="screen-search" class="display-screen">
+          <div class="search-header">
+            <div class="search-bar-container">
+              <svg class="search-icon-svg" viewBox="0 0 24 24" width="18" height="18" stroke="currentColor"
+                stroke-width="2.5" fill="none">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+              <input type="text" id="search-input" placeholder="Search track, artist, album, or YouTube video..." />
+              <div class="search-controls-wrapper">
+                <button id="search-clear-btn" class="clear-btn" style="display:none;">&times;</button>
+                <span class="kbd-pill">Ctrl + K</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Search Results Tabs -->
+          <div class="search-tabs-container">
+            <div class="search-tabs">
+              <button class="tab-btn active" data-tab="spotify-results">Spotify Premium</button>
+              <button class="tab-btn" data-tab="youtube-results">YouTube Audio</button>
+            </div>
+          </div>
+
+          <!-- Tab Contents -->
+          <div class="tab-contents">
+            <div id="tab-spotify-results" class="tab-pane active">
+              <div class="results-loading" id="spotify-loading" style="display:none;">Searching Spotify catalog...</div>
+              <div class="results-list" id="spotify-results-list">
+                <div class="search-initial">Type a query to search high-fidelity Spotify tracks.</div>
+              </div>
+            </div>
+            <div id="tab-youtube-results" class="tab-pane">
+              <div class="results-loading" id="youtube-loading" style="display:none;">Scraping YouTube audio...</div>
+              <div class="results-list" id="youtube-results-list">
+                <div class="search-initial">Type a query to search high-fidelity YouTube streams.</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- SCREEN: Playlists Manager -->
+        <section id="screen-playlists" class="display-screen">
+          <div class="playlists-header">
+            <div class="welcome-header">
+              <h1>Playlists Manager</h1>
+              <p>Seamlessly mix Spotify tracks, YouTube streams, and local files.</p>
+            </div>
+            <button class="primary-btn" id="btn-new-playlist">+ New Workspace</button>
+          </div>
+          <div class="playlists-container">
+            <div class="playlists-sidebar-wrapper">
+              <div class="sidebar-header-compact">Saved Playlists</div>
+              <div class="playlists-sidebar" id="playlists-nav-list">
+                <!-- Playlists list will render here -->
+              </div>
+            </div>
+            <div class="playlist-details" id="playlist-active-view">
+              <div class="playlist-empty-view">
+                <div class="empty-icon-circle">
+                  <svg viewBox="0 0 24 24" width="36" height="36" stroke="currentColor" stroke-width="2" fill="none"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M9 18V5l12-2v13"></path>
+                    <circle cx="6" cy="18" r="3"></circle>
+                    <circle cx="18" cy="16" r="3"></circle>
+                  </svg>
+                </div>
+                <h3>Select or Create a Playlist</h3>
+                <p>Organize both Spotify and YouTube tracks in a single local workspace.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- SCREEN: Spotify Connect Authorization -->
+        <section id="screen-spotify-connect" class="display-screen">
+          <div class="spotify-auth-view" id="spotify-auth-login-wrapper">
+            <div class="auth-icon-banner">
+              <svg viewBox="0 0 24 24" width="56" height="56" fill="#1DB954">
+                <path
+                  d="M12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2ZM16.5858 16.4244C16.3902 16.7468 15.9686 16.8524 15.6462 16.6568C13.1118 15.1102 9.98705 14.7656 6.22123 15.626C5.85963 15.7088 5.49802 15.4828 5.41522 15.1212C5.33242 14.7596 5.55843 14.398 5.92003 14.3152C10.0306 13.3736 13.4862 13.7656 16.3534 15.51C16.6758 15.7056 16.7814 16.1272 16.5858 16.4244ZM17.9724 13.3888C17.7236 13.7958 17.1884 13.924 16.7814 13.6752C13.8884 11.899 9.47365 11.3862 6.09063 12.4116C5.63082 12.551 5.14842 12.295 5.00902 11.8352C4.86962 11.3754 5.12563 10.893 5.58544 10.7536C9.45825 9.57782 14.3254 10.1508 17.6724 12.2116C18.0646 12.4452 18.2078 12.9818 17.9724 13.3888ZM18.0854 10.2796C15.1182 8.51662 10.2132 8.35102 7.37324 9.21342C6.91343 9.35282 6.42363 9.08922 6.28423 8.62942C6.14483 8.16962 6.40843 7.67982 6.86823 7.54042C10.1382 6.54702 15.545 6.72782 18.9954 8.78462C19.41 9.03322 19.5456 9.57602 19.297 9.99042C19.0484 10.4048 18.5056 10.5404 18.0854 10.2796Z" />
+              </svg>
+            </div>
+            <h2>Connect Spotify Premium</h2>
+            <p>Since Spotify restricts streaming outside of official apps, we utilize the official Spotify Web Playback
+              SDK. This requires authenticating your Spotify Premium account.</p>
+
+            <div class="auth-status-container" id="spotify-auth-status">
+              <span class="status-indicator disconnected">Disconnected</span>
+              <p class="status-details">No active session found. Click below to authenticate.</p>
+            </div>
+
+            <button class="primary-btn wide-btn" id="btn-spotify-login">Connect Spotify Account</button>
+          </div>
+
+          <!-- Dynamic Spotify Library Dashboard -->
+          <div id="spotify-dashboard" style="display:none; margin-top:20px; width:100%;"></div>
+        </section>
+
+        <!-- SCREEN: Local Library -->
+        <section id="screen-library" class="display-screen">
+          <div class="welcome-header">
+            <h1>Local Library</h1>
+            <p>Scan and play offline audio files from your local storage system.</p>
+          </div>
+
+          <div class="settings-group card-system">
+            <h3>Scan Local Music Folder</h3>
+            <div class="scan-input-group">
+              <input type="text" id="library-scan-path"
+                placeholder="Enter absolute folder path (e.g. /home/user/Music)..." />
+              <button class="primary-btn" id="btn-library-scan">Scan Folder</button>
+            </div>
+            <p id="library-scan-status" class="setting-hint">Scan directories containing MP3, FLAC, OGG, WAV, AAC, or
+              M4A audio files to add them to your native offline catalog.</p>
+          </div>
+
+          <div class="search-header" style="margin-top: 15px;">
+            <div class="search-bar-container">
+              <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2.5" fill="none">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+              <input type="text" id="library-search-input"
+                placeholder="Search your local offline music catalog instantaneously..." />
+            </div>
+          </div>
+
+          <div class="results-list-wrapper">
+            <div class="results-list" id="library-results-list">
+              <div class="search-initial">No tracks scanned. Enter a path above to build your native library.</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- SCREEN: Settings -->
+        <section id="screen-settings" class="display-screen">
+          <div class="welcome-header">
+            <h1>Settings & Preferences</h1>
+            <p>Configure local audio processing, premium interfaces, and diagnostics.</p>
+          </div>
+
+          <div class="settings-grid">
+            <div class="settings-column">
+              <div class="settings-group-card">
+                <div class="group-header">Audio Engine Settings</div>
+                <div class="toggle-row">
+                  <label for="setting-spotify-normalisation">Loudness Normalization</label>
+                  <div class="switch-wrapper">
+                    <input type="checkbox" id="setting-spotify-normalisation" class="ios-switch" />
+                    <label for="setting-spotify-normalisation" class="switch-btn"></label>
+                  </div>
+                </div>
+                <p class="setting-hint">Match loudness across tracks (standard -14 LUFS normalisation) to prevent volume spikes.</p>
+
+                <div class="toggle-row" style="margin-top: 14px;">
+                  <label for="setting-spotify-cache">Audio Caching</label>
+                  <div class="switch-wrapper">
+                    <input type="checkbox" id="setting-spotify-cache" class="ios-switch" />
+                    <label for="setting-spotify-cache" class="switch-btn"></label>
+                  </div>
+                </div>
+                <p class="setting-hint">Store played tracks in a local system cache to reduce network usage.</p>
+
+                <div class="form-row" id="cache-size-container" style="margin-top: 10px;">
+                  <label for="setting-spotify-cache-size">Max Cache Directory Size</label>
+                  <select id="setting-spotify-cache-size" class="premium-select">
+                    <option value="500">500 MB</option>
+                    <option value="1000">1 GB</option>
+                    <option value="2000">2 GB</option>
+                    <option value="5000">5 GB</option>
+                    <option value="0">Unlimited</option>
+                  </select>
+                </div>
+
+                <div class="toggle-row" style="margin-top: 14px;">
+                  <label for="setting-spotify-gapless">Gapless Preloading</label>
+                  <div class="switch-wrapper">
+                    <input type="checkbox" id="setting-spotify-gapless" class="ios-switch" />
+                    <label for="setting-spotify-gapless" class="switch-btn"></label>
+                  </div>
+                </div>
+
+                <div class="toggle-row" style="margin-top: 14px;">
+                  <label for="setting-spotify-mpris">Hardware Media Keys</label>
+                  <div class="switch-wrapper">
+                    <input type="checkbox" id="setting-spotify-mpris" class="ios-switch" />
+                    <label for="setting-spotify-mpris" class="switch-btn"></label>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="settings-column">
+              <div class="settings-group-card">
+                <div class="group-header">Interface & Visuals</div>
+                <div class="toggle-row">
+                  <label for="setting-show-video">Show YouTube Video Element</label>
+                  <div class="switch-wrapper">
+                    <input type="checkbox" id="setting-show-video" class="ios-switch" />
+                    <label for="setting-show-video" class="switch-btn"></label>
+                  </div>
+                </div>
+                <p class="setting-hint">When enabled, the YouTube video is visible in the bottom-right corner.</p>
+
+                <div class="toggle-row" style="margin-top: 14px;">
+                  <label for="setting-performance-graphics">Premium Graphics Mode</label>
+                  <div class="switch-wrapper">
+                    <input type="checkbox" id="setting-performance-graphics" class="ios-switch" />
+                    <label for="setting-performance-graphics" class="switch-btn"></label>
+                  </div>
+                </div>
+                <p class="setting-hint">Toggle glassmorphic overlays and backdrop blurs to optimize GPU rendering.</p>
+              </div>
+
+              <div class="settings-group-card">
+                <div class="group-header">Offline Lyrics Database</div>
+                <div class="system-stats-card">
+                  <div class="stat-line">
+                    <span>Cached Tracks:</span>
+                    <strong id="settings-lyrics-cache-count" style="color: var(--color-accent);">Loading...</strong>
+                  </div>
+                  <button class="danger-outline-btn" id="btn-purge-lyrics-cache">Purge Cache Database</button>
+                </div>
+                <p class="setting-hint">Lyrics are cached locally under your application cache directory to load instantly (<2ms) completely offline.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Diagnostics Block (Full Width) -->
+          <div class="settings-group-card diagnostics-group-card" style="margin-top: 20px; max-width: 100%;">
+            <div class="group-header">System Diagnostics</div>
+
+            <!-- Hidden elements preserved in DOM for updater scripts -->
+            <div class="system-hardware-grid" style="display: none;">
+              <div class="hardware-stat-box"><span id="diag-ram"></span></div>
+              <div class="hardware-stat-box"><span id="diag-latency"></span></div>
+              <div class="hardware-stat-box"><span id="diag-buffer"></span></div>
+              <div class="hardware-stat-box"><span id="diag-cache"></span></div>
+            </div>
+            <span id="settings-audio-device" style="display: none;"></span>
+
+            <div class="system-stats-card">
+              <div class="stat-line">
+                <span>Self-Test Suite:</span>
+                <strong style="color: var(--color-accent);">Ready</strong>
+              </div>
+              <button class="primary-btn" id="btn-run-diagnostics">Execute Suite Run</button>
+            </div>
+            <p class="setting-hint">Run local connection, database CRUD, and streaming provider health checks.</p>
+            
+            <div id="diagnostics-log" class="system-stats"
+              style="margin-top: 12px; display: none; max-height: 150px; overflow-y: auto; text-align: left; font-family: monospace; white-space: pre-wrap; font-size: 0.82rem; line-height: 1.4;">
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <!-- Premium Collapsible Right Panels (Queue, Lyrics, Info) -->
+      <aside class="app-queue-sidebar queue-sidebar-hidden">
+        <div class="right-panel-tabs">
+          <button class="panel-tab-btn active" data-panel="panel-queue">Queue</button>
+          <button class="panel-tab-btn" data-panel="panel-lyrics">Lyrics</button>
+          <button class="panel-tab-btn" data-panel="panel-info">Info</button>
+        </div>
+
+        <!-- Tab 1: Queue -->
+        <div id="panel-queue" class="right-panel-content active">
+          <div class="queue-header">
+            <h3>Play Queue</h3>
+            <div class="queue-actions">
+              <button id="btn-queue-shuffle" class="icon-btn" title="Shuffle Queue">
+                <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none">
+                  <polyline points="16 3 21 3 21 8"></polyline>
+                  <line x1="4" y1="20" x2="21" y2="3"></line>
+                  <polyline points="21 16 21 21 16 21"></polyline>
+                  <line x1="15" y1="15" x2="21" y2="21"></line>
+                  <line x1="4" y1="4" x2="9" y2="9"></line>
+                </svg>
+              </button>
+              <button id="btn-queue-clear" class="queue-clear-btn" title="Clear All Tracks">Clear</button>
+            </div>
+          </div>
+          <div class="queue-list" id="queue-items-list">
+            <!-- Dynamically populated queue items will go here -->
+          </div>
+        </div>
+
+        <!-- Tab 2: Lyrics -->
+        <div id="panel-lyrics" class="right-panel-content">
+          <div class="lyrics-header">
+            <div class="lyrics-header-title">
+              <h3>Track Lyrics</h3>
+            </div>
+            <div class="lyrics-sync-controls">
+              <button id="btn-lyric-sync-minus" class="lyrics-ctrl-btn" title="Sync -0.5s">-0.5s</button>
+              <span id="lyric-sync-offset-label">0.0s</span>
+              <button id="btn-lyric-sync-plus" class="lyrics-ctrl-btn" title="Sync +0.5s">+0.5s</button>
+              <button id="btn-lyric-fullscreen" class="lyrics-ctrl-btn" title="Toggle Full-Screen Lyrics">
+                <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none">
+                  <path
+                    d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3">
+                  </path>
+                </svg>
+              </button>
+            </div>
+          </div>
+          <div class="lyrics-body" id="lyrics-container">
+            <div class="lyrics-placeholder">No track currently playing or lyrics unavailable.</div>
+          </div>
+        </div>
+
+        <!-- Tab 3: Track Info -->
+        <div id="panel-info" class="right-panel-content">
+          <div class="info-header">
+            <h3>Track Information</h3>
+          </div>
+          <div class="info-body" id="track-info-container">
+            <div class="info-placeholder">Select a track to view full metadata details.</div>
+          </div>
+        </div>
+      </aside>
+    </div>
+
+
+
+
+
+    <!-- Pinned Bottom Playback Control Bar -->
+    <footer class="app-player-bar">
+
+      <!-- Track Details Pane -->
+      <div class="current-track-info">
+        <div class="track-art-wrapper">
+          <img
+            src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23121426'><rect width='100%25' height='100%25' fill='%23121426'/><circle cx='12' cy='12' r='7' fill='none' stroke='%23a855f7' stroke-width='2'/><circle cx='12' cy='12' r='2' fill='%23a855f7'/><path d='M12 5v7' stroke='%23a855f7' stroke-width='2' stroke-linecap='round'/></svg>"
+            alt="Album Art" id="player-album-art" class="album-art" />
+          <div class="source-icon" id="player-source-indicator" title="Source">YT</div>
+        </div>
+        <div class="track-meta">
+          <span class="track-title" id="player-track-title">Not Playing</span>
+          <span class="track-artist" id="player-track-artist">Select a song to start</span>
+        </div>
+        <button class="heart-btn" id="player-like-btn" title="Add to liked">
+          <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none">
+            <path
+              d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z">
+            </path>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Central Playback Controls -->
+      <div class="playback-controls-group">
+        <div class="control-buttons">
+          <button class="player-btn" id="ctrl-shuffle" title="Shuffle">
+            <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none">
+              <polyline points="16 3 21 3 21 8"></polyline>
+              <line x1="4" y1="20" x2="21" y2="3"></line>
+              <polyline points="21 16 21 21 16 21"></polyline>
+              <line x1="15" y1="15" x2="21" y2="21"></line>
+              <line x1="4" y1="4" x2="9" y2="9"></line>
+            </svg>
+          </button>
+          <button class="player-btn" id="ctrl-prev" title="Previous">
+            <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none">
+              <polygon points="19 20 9 12 19 4 19 20"></polygon>
+              <line x1="5" y1="19" x2="5" y2="5"></line>
+            </svg>
+          </button>
+          <button class="player-btn play-pause-btn" id="ctrl-play-pause" title="Play">
+            <svg id="play-icon" viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+              <polygon points="5 3 19 12 5 21 5 3"></polygon>
+            </svg>
+            <svg id="pause-icon" viewBox="0 0 24 24" width="22" height="22" fill="currentColor" style="display:none;">
+              <rect x="6" y="4" width="4" height="16"></rect>
+              <rect x="14" y="4" width="4" height="16"></rect>
+            </svg>
+          </button>
+          <button class="player-btn" id="ctrl-next" title="Next">
+            <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none">
+              <polygon points="5 4 15 12 5 20 5 4"></polygon>
+              <line x1="19" y1="5" x2="19" y2="19"></line>
+            </svg>
+          </button>
+          <button class="player-btn" id="ctrl-repeat" title="Repeat">
+            <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none">
+              <polyline points="17 1 21 5 17 9"></polyline>
+              <path d="M3 11V9a4 4 0 0 1 4-4h14"></path>
+              <polyline points="7 23 3 19 7 15"></polyline>
+              <path d="M21 13v2a4 4 0 0 1-4 4H3"></path>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Seekbar Timeline Slider -->
+        <div class="timeline-slider-container">
+          <span class="time-stamp" id="player-time-current">0:00</span>
+          <div class="progress-bar-wrapper">
+            <input type="range" id="player-seek-slider" min="0" max="100" value="0" step="0.1" />
+            <div class="progress-fill" id="player-seek-fill"></div>
+          </div>
+          <span class="time-stamp" id="player-time-total">0:00</span>
+        </div>
+      </div>
+
+      <!-- Volume and Layout Action Bar -->
+      <div class="player-action-controls">
+        <div class="volume-slider-group">
+          <button class="player-btn" id="ctrl-volume-mute" title="Mute/Unmute">
+            <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none">
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+              <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+            </svg>
+          </button>
+          <div class="volume-slider-wrapper">
+            <input type="range" id="player-volume-slider" min="0" max="100" value="80" />
+            <div class="volume-fill" id="player-volume-fill"></div>
+          </div>
+        </div>
+
+        <button class="player-btn" id="btn-toggle-mini-video" title="Toggle Compact Video View">
+          <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none">
+            <rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"></rect>
+            <line x1="7" y1="2" x2="7" y2="22"></line>
+          </svg>
+        </button>
+
+        <button class="player-btn" id="btn-toggle-queue" title="Toggle Play Queue">
+          <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"
+            stroke-linecap="round" stroke-linejoin="round">
+            <line x1="8" y1="6" x2="21" y2="6"></line>
+            <line x1="8" y1="12" x2="21" y2="12"></line>
+            <line x1="8" y1="18" x2="21" y2="18"></line>
+            <line x1="3" y1="6" x2="3.01" y2="6"></line>
+            <line x1="3" y1="12" x2="3.01" y2="12"></line>
+            <line x1="3" y1="18" x2="3.01" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+    </footer>
+
+    <!-- Video Corner Overlay (Picture-in-picture style for YouTube videos) -->
+    <div id="compact-video-view" class="video-corner-hidden">
+      <div class="video-corner-header">
+        <span>Now Playing (Video)</span>
+        <button id="close-video-corner">&times;</button>
+      </div>
+      <div id="video-corner-frame">
+        <div id="yt-player-container"></div>
+      </div>
+    </div>
+
+    <!-- Global Command Palette Modal Overlay -->
+    <div id="command-palette" class="palette-overlay palette-hidden">
+      <div class="palette-modal">
+        <div class="palette-search-wrapper">
+          <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2.5" fill="none">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <input type="text" id="palette-search-input" placeholder="Type a command or track search (Ctrl+K)..." />
+          <span class="palette-esc-badge">ESC</span>
+        </div>
+        <div class="palette-results" id="palette-results-list">
+          <!-- Dynamically populated commands and results -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Manual Lyrics Search Modal Overlay -->
+    <div id="manual-lyrics-modal" class="palette-overlay palette-hidden">
+      <div class="palette-modal" style="max-width: 480px;">
+        <div class="palette-search-wrapper"
+          style="border-bottom: 1px solid rgba(255,255,255,0.06); padding: 16px 20px; display: flex; align-items: center; justify-content: space-between;">
+          <h4
+            style="margin: 0; font-family: var(--font-display); font-size: 1.1rem; color: var(--color-text-main); font-weight: 700;">
+            Search Lyrics Manually</h4>
+          <button id="btn-close-manual-lyrics" class="ctrl-btn"
+            style="width: 24px; height: 24px; font-size: 1.2rem; cursor: pointer; border: none; background: none;">&times;</button>
+        </div>
+        <div
+          style="padding: 20px; display: flex; flex-direction: column; gap: 12px; border-bottom: 1px solid rgba(255,255,255,0.06);">
+          <div style="display: flex; gap: 10px;">
+            <input type="text" id="manual-lyrics-artist-input" placeholder="Artist Name"
+              style="flex: 1; padding: 10px 14px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; color: white; font-family: inherit; font-size: 0.9rem;" />
+            <input type="text" id="manual-lyrics-title-input" placeholder="Song Title"
+              style="flex: 1; padding: 10px 14px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; color: white; font-family: inherit; font-size: 0.9rem;" />
+          </div>
+          <button id="btn-manual-lyrics-search-trigger" class="primary-btn"
+            style="padding: 10px; font-size: 0.9rem; font-weight: 600; width: 100%;">Search Database</button>
+        </div>
+        <div class="palette-results" id="manual-lyrics-results-list"
+          style="max-height: 250px; overflow-y: auto; padding: 10px;">
+          <div class="results-loading"
+            style="padding: 20px; font-size: 0.88rem; color: var(--color-text-dim); text-align: center;">Enter query fields to search...</div>
+        </div>
+      </div>
+    </div>
+    <!-- Spotify On Repeat Import Modal Overlay -->
+    <div id="spotify-import-modal" class="palette-overlay palette-hidden">
+      <div class="palette-modal" style="max-width: 440px; background: #151722; border: 1px solid var(--border-light); border-radius: 12px; box-shadow: 0 20px 50px rgba(0,0,0,0.5);">
+        <div class="palette-search-wrapper"
+          style="border-bottom: 1px solid rgba(255,255,255,0.04); padding: 14px 18px; display: flex; align-items: center; justify-content: space-between; background: rgba(255,255,255,0.01);">
+          <h4
+            style="margin: 0; font-family: var(--font-display); font-size: 0.95rem; color: var(--color-text-main); font-weight: 700; display: flex; align-items: center; gap: 8px; text-transform: uppercase; letter-spacing: 0.5px;">
+            <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2.5" fill="none" style="stroke: var(--color-accent);"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+            Import On Repeat
+          </h4>
+          <button id="btn-close-spotify-import" class="ctrl-btn"
+            style="width: 24px; height: 24px; font-size: 1.2rem; cursor: pointer; border: none; background: none; color: var(--color-text-muted);">&times;</button>
+        </div>
+        <div style="padding: 16px; display: flex; flex-direction: column; gap: 12px;">
+          <p style="margin: 0; font-size: 0.8rem; color: var(--color-text-muted); line-height: 1.4;">
+            Upload your Exportify <code>.csv</code> file or paste its content to load your playlist.
+          </p>
+          
+          <div style="background: rgba(255, 255, 255, 0.01); border: 1px dashed rgba(255, 255, 255, 0.1); border-radius: 6px; padding: 14px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; transition: all 0.2s ease;" onmouseover="this.style.borderColor='var(--color-accent)'; this.style.background='rgba(99, 102, 241, 0.02)';" onmouseout="this.style.borderColor='rgba(255,255,255,0.1)'; this.style.background='rgba(255, 255, 255, 0.01)';">
+            <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" style="stroke: var(--color-text-dim);"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+            <span style="font-size: 0.75rem; color: var(--color-text-muted); font-weight: 600;">Select Exportify File</span>
+            <input type="file" id="spotify-import-csv-file" accept=".csv,.json" style="font-size: 0.75rem; color: var(--color-text-dim); cursor: pointer; max-width: 100%; margin-top: 4px;" />
+          </div>
+
+          <div style="text-align: center; font-size: 0.65rem; color: var(--color-text-dim); font-weight: 800; text-transform: uppercase; letter-spacing: 1px;">Or Paste Content</div>
+
+          <textarea id="spotify-import-json-input" placeholder="Paste CSV rows or JSON here..."
+            style="width: 100%; height: 90px; padding: 10px; background: rgba(0,0,0,0.15); border: 1px solid rgba(255,255,255,0.06); border-radius: 6px; color: white; font-family: monospace; font-size: 0.75rem; resize: none; box-sizing: border-box;"></textarea>
+          <div id="spotify-import-error" style="color: var(--color-danger); font-size: 0.75rem; display: none;"></div>
+          <button id="btn-spotify-import-submit" class="primary-btn"
+            style="padding: 8px; font-size: 0.8rem; font-weight: 600; width: 100%; background: var(--color-accent); color: white; border: none; border-radius: 6px; cursor: pointer; margin-top: 4px; transition: all 0.2s ease;" onmouseover="this.style.opacity='0.9'; this.style.transform='translateY(-1px)';" onmouseout="this.style.opacity='1'; this.style.transform='none';">Import Playlist</button>
+        </div>
+      </div>
+    </div>
+
+  <!-- Premium Dialog Modal Overlay -->
+  <div id="custom-modal-overlay" class="modal-overlay">
+    <div class="modal-box">
+      <h3 id="modal-title">Notification</h3>
+      <p id="modal-message"></p>
+      <div id="modal-input-container" class="modal-input-container" style="display: none;">
+        <input type="text" id="modal-input" placeholder="Type here..." />
+      </div>
+      <div class="modal-actions">
+        <button id="modal-btn-cancel" class="modal-btn outline">Cancel</button>
+        <button id="modal-btn-ok" class="modal-btn primary">OK</button>
+      </div>
+    </div>
+  </div>
+</body>
+
+</html>

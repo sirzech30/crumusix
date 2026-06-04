@@ -1,0 +1,57 @@
+[package]
+name = "crumusix"
+version = "0.1.0"
+description = "CrumusiX Premium Native Desktop Audio Player"
+authors = ["you"]
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+# The `_lib` suffix may seem redundant but it is necessary
+# to make the lib name unique and wouldn't conflict with the bin name.
+# This seems to be only an issue on Windows, see https://github.com/rust-lang/cargo/issues/8519
+name = "tauri_app_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+vergen = "=9.0.6"
+vergen-lib = "=0.1.6"
+vergen-gitcl = "=1.0.8"
+
+[dependencies]
+tauri = { version = "2", features = ["protocol-asset", "tray-icon"] }
+tauri-plugin-opener = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+reqwest = { version = "0.12", features = ["json"] }
+url = "2.5"
+tokio = { version = "1", features = ["full"] }
+librespot = { version = "0.8", default-features = false, features = ["rodio-backend", "native-tls"] }
+librespot-oauth = "0.8"
+rodio = "0.20"
+cpal = "0.15"
+parking_lot = "0.12"
+souvlaki = "0.7"
+rand = "0.8"
+async-trait = "0.1"
+lofty = "0.20"
+rusqlite = { version = "0.31", features = ["bundled"] }
+sha2 = "0.10"
+base64 = "0.22"
+
+
+
+[profile.release]
+opt-level = "z"        # Optimize for size
+lto = true             # Enable link-time optimizations
+codegen-units = 1      # Maximize compiler optimization passes
+panic = "abort"        # Eliminate panic unwinding overhead
+strip = true           # Strip all debug symbols
+
+[[bench]]
+name = "performance"
+harness = false
+
+
