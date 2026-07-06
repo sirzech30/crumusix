@@ -1,9 +1,9 @@
 [package]
 name = "crumusix"
 version = "0.1.0"
-description = "CrumusiX Premium Native Desktop Audio Player"
-authors = ["you"]
-edition = "2021"
+description = "CrumusiX Desktop Audio Player"
+authors = ["sirzech"]
+edition = "2024"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -37,7 +37,7 @@ souvlaki = "0.7"
 rand = "0.8"
 async-trait = "0.1"
 lofty = "0.20"
-rusqlite = { version = "0.31", features = ["bundled"] }
+rusqlite = { version = "0.37", features = ["bundled"] }
 sha2 = "0.10"
 base64 = "0.22"
 

@@ -827,12 +827,12 @@ function updateSpotifyAuthScreen() {
   const loginWrapper = document.getElementById('spotify-auth-login-wrapper');
   const dash = document.getElementById('spotify-dashboard');
 
-  if (appState.spotifyToken || appState.spotifyDeviceId) {
+  if (appState.spotifyToken) {
     if (spotifyBadge) spotifyBadge.classList.add('connected');
     if (loginWrapper) loginWrapper.style.display = 'none';
-    if (dash) dash.style.display = 'block';
-
-    if (appState.spotifyToken) {
+    if (dash) {
+      dash.style.display = 'block';
+      // Always call loadSpotifyDashboard when dashboard is shown
       loadSpotifyDashboard();
     }
   } else {
@@ -1155,12 +1155,11 @@ async function loadSpotifyDashboard() {
   const container = document.getElementById('spotify-dashboard');
   if (!container) return;
 
+  // Only render dashboard if we have a valid Spotify token
   if (!appState.spotifyToken) {
     container.style.display = 'none';
     return;
   }
-
-
 
   container.style.display = 'block';
   container.innerHTML = `

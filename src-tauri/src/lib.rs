@@ -68,15 +68,22 @@ static OAUTH_SERVER_RUNNING: AtomicBool = AtomicBool::new(false);
 
 #[tauri::command]
 async fn start_oauth_server(app_handle: tauri::AppHandle) -> Result<String, String> {
+    // Safety check: if the login window is not active, reset the running state
+    if app_handle.get_webview_window("spotify-login").is_none() {
+        OAUTH_SERVER_RUNNING.store(false, Ordering::SeqCst);
+    }
+
     if OAUTH_SERVER_RUNNING.swap(true, Ordering::SeqCst) {
         return Err("OAuth authentication is already in progress. Please complete the login in your open browser window.".to_string());
     }
 
     let result = start_oauth_server_internal().await;
     
-    // Auto-close the dedicated login window on success or failure
-    if let Some(auth_win) = app_handle.get_webview_window("spotify-login") {
-        auth_win.close().ok();
+    // Auto-close the dedicated login window only on success
+    if result.is_ok() {
+        if let Some(auth_win) = app_handle.get_webview_window("spotify-login") {
+            auth_win.close().ok();
+        }
     }
     
     OAUTH_SERVER_RUNNING.store(false, Ordering::SeqCst);
@@ -88,104 +95,132 @@ async fn start_oauth_server_internal() -> Result<String, String> {
         .await
         .map_err(|e| format!("Failed to bind TCP listener to port 8888: {}. Make sure no other service is using port 8888.", e))?;
         
-    // Wait for the single redirect request from Spotify in the browser with a timeout of 5 minutes
-    let accept_result = tokio::time::timeout(
-        std::time::Duration::from_secs(300),
-        listener.accept()
-    ).await;
+    let timeout_duration = std::time::Duration::from_secs(300);
+    let start_time = std::time::Instant::now();
     
-    match accept_result {
-        Ok(Ok((mut stream, _))) => {
-            let mut buffer = [0; 2048];
-            let size = stream.read(&mut buffer).await
-                .map_err(|e| format!("Failed to read from TCP stream: {}", e))?;
-            
-            let request = String::from_utf8_lossy(&buffer[..size]);
-            
-            // Extract the 'code=' query parameter from the HTTP GET path
-            if let Some(code_idx) = request.find("code=") {
-                let code_start = code_idx + 5;
-                let remaining = &request[code_start..];
-                let code_end = remaining.find(' ').unwrap_or(remaining.len());
-                let raw_code = &remaining[..code_end];
-                
-                // Truncate other parameter chains like &state or &error
-                let code = raw_code.split('&').next().unwrap_or(raw_code).to_string();
-                
-                // Return a beautiful visual confirmation page in the user's browser
-                let response_body = r#"
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <title>CrumusiX Authentication Success</title>
-                    <style>
-                        body {
-                            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-                            background-color: #0b0c16;
-                            color: #f3f4f6;
-                            text-align: center;
-                            padding-top: 100px;
-                            margin: 0;
+    loop {
+        let elapsed = start_time.elapsed();
+        if elapsed >= timeout_duration {
+            return Err("OAuth connection timed out after 5 minutes".to_string());
+        }
+        let remaining = timeout_duration - elapsed;
+        
+        // Wait for incoming connections with timeout
+        let accept_result = tokio::time::timeout(remaining, listener.accept()).await;
+        
+        match accept_result {
+            Ok(Ok((mut stream, _))) => {
+                let mut buffer = [0; 2048];
+                // Read the request headers/body with a short timeout to prevent slow-loris lockups
+                let read_timeout = std::time::Duration::from_secs(5);
+                match tokio::time::timeout(read_timeout, stream.read(&mut buffer)).await {
+                    Ok(Ok(size)) if size > 0 => {
+                        let request = String::from_utf8_lossy(&buffer[..size]);
+                        
+                        let mut is_valid_auth = false;
+                        let mut captured_code = None;
+                        
+                        if let Some(first_line) = request.lines().next() {
+                            if first_line.starts_with("GET ") && first_line.contains("code=") {
+                                if let Some(code_idx) = first_line.find("code=") {
+                                    let code_start = code_idx + 5;
+                                    let remaining = &first_line[code_start..];
+                                    let code_end = remaining.find(' ').unwrap_or(remaining.len());
+                                    let raw_code = &remaining[..code_end];
+                                    let code = raw_code.split('&').next().unwrap_or(raw_code).to_string();
+                                    captured_code = Some(code);
+                                    is_valid_auth = true;
+                                }
+                            }
                         }
-                        .container {
-                            max-width: 500px;
-                            margin: 0 auto;
-                            padding: 40px;
-                            background: rgba(18, 20, 38, 0.6);
-                            border: 1px solid rgba(255, 255, 255, 0.08);
-                            border-radius: 16px;
-                            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+
+                        // Check if this is the actual Spotify redirect query containing "code="
+                        if is_valid_auth {
+                            let code = captured_code.unwrap();
+                            
+                            // Return a beautiful visual confirmation page in the user's browser
+                            let response_body = r#"
+                            <!DOCTYPE html>
+                            <html>
+                            <head>
+                                <title>CrumusiX Authentication Success</title>
+                                <style>
+                                    body {
+                                        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                                        background-color: #0b0c16;
+                                        color: #f3f4f6;
+                                        text-align: center;
+                                        padding-top: 100px;
+                                        margin: 0;
+                                    }
+                                    .container {
+                                        max-width: 500px;
+                                        margin: 0 auto;
+                                        padding: 40px;
+                                        background: rgba(18, 20, 38, 0.6);
+                                        border: 1px solid rgba(255, 255, 255, 0.08);
+                                        border-radius: 16px;
+                                        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+                                    }
+                                    h1 { color: #1DB954; font-size: 2.2rem; margin-bottom: 16px; }
+                                    p { color: #9ca3af; font-size: 1.1rem; line-height: 1.6; }
+                                    .badge {
+                                        display: inline-block;
+                                        padding: 6px 12px;
+                                        background: rgba(29, 185, 84, 0.15);
+                                        color: #1DB954;
+                                        border: 1px solid #1DB954;
+                                        border-radius: 20px;
+                                        font-weight: bold;
+                                        text-transform: uppercase;
+                                        font-size: 0.85rem;
+                                        margin-bottom: 24px;
+                                    }
+                                </style>
+                            </head>
+                            <body>
+                                <div class="container">
+                                    <div class="badge">Connection Successful</div>
+                                    <h1>CrumusiX Desktop Linked</h1>
+                                    <p>Your Spotify Premium account has been successfully linked to the player. You may safely close this tab and return to the application!</p>
+                                </div>
+                                <script>
+                                    setTimeout(() => {
+                                        window.close();
+                                    }, 1000);
+                                </script>
+                            </body>
+                            </html>
+                            "#;
+                            
+                            let response = format!(
+                                "HTTP/1.1 200 OK\r\nContent-Length: {}\r\nContent-Type: text/html\r\nConnection: close\r\n\r\n{}",
+                                response_body.len(),
+                                response_body
+                            );
+                            
+                            stream.write_all(response.as_bytes()).await.ok();
+                            stream.flush().await.ok();
+                            
+                            return Ok(code);
+                        } else {
+                            // Probe or favicon check: respond with 400 Bad Request, close socket, and loop to wait for the real auth request
+                            let err_response = "HTTP/1.1 400 Bad Request\r\nContent-Type: text/plain\r\nConnection: close\r\n\r\nNot a Spotify auth callback redirect.";
+                            stream.write_all(err_response.as_bytes()).await.ok();
+                            stream.flush().await.ok();
                         }
-                        h1 { color: #1DB954; font-size: 2.2rem; margin-bottom: 16px; }
-                        p { color: #9ca3af; font-size: 1.1rem; line-height: 1.6; }
-                        .badge {
-                            display: inline-block;
-                            padding: 6px 12px;
-                            background: rgba(29, 185, 84, 0.15);
-                            color: #1DB954;
-                            border: 1px solid #1DB954;
-                            border-radius: 20px;
-                            font-weight: bold;
-                            text-transform: uppercase;
-                            font-size: 0.85rem;
-                            margin-bottom: 24px;
-                        }
-                    </style>
-                </head>
-                <body>
-                    <div class="container">
-                        <div class="badge">Connection Successful</div>
-                        <h1>CrumusiX Desktop Linked</h1>
-                        <p>Your Spotify Premium account has been successfully linked to the player. You may safely close this tab and return to the application!</p>
-                    </div>
-                    <script>
-                        setTimeout(() => {
-                            window.close();
-                        }, 1000);
-                    </script>
-                </body>
-                </html>
-                "#;
-                
-                let response = format!(
-                    "HTTP/1.1 200 OK\r\nContent-Length: {}\r\nContent-Type: text/html\r\nConnection: close\r\n\r\n{}",
-                    response_body.len(),
-                    response_body
-                );
-                
-                stream.write_all(response.as_bytes()).await.ok();
-                stream.flush().await.ok();
-                
-                Ok(code)
-            } else {
-                let err_response = "HTTP/1.1 400 Bad Request\r\nContent-Type: text/plain\r\n\r\nAuthorization code not found in request.";
-                stream.write_all(err_response.as_bytes()).await.ok();
-                stream.flush().await.ok();
-                Err("Authorization code not found in request".to_string())
+                    }
+                    _ => {}
+                }
+            }
+            Ok(Err(_)) => {
+                // Short sleep before next accept attempt to prevent tight-loop CPU pegging
+                tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+            }
+            Err(_) => {
+                return Err("OAuth connection timed out after 5 minutes".to_string());
             }
         }
-        Ok(Err(e)) => Err(format!("Failed to accept incoming TCP connection: {}", e)),
-        Err(_) => Err("OAuth connection timed out after 5 minutes".to_string()),
     }
 }
 
@@ -310,7 +345,7 @@ fn silence_alsa_logs() {
         0
     }
 
-    extern "C" {
+    unsafe extern "C" {
         fn snd_lib_error_set_handler(
             handler: Option<unsafe extern "C" fn(*const c_char, c_int, *const c_char, c_int, *const c_char) -> c_int>
         ) -> c_int;
@@ -327,7 +362,7 @@ fn silence_jack_logs() {
     
     unsafe extern "C" fn null_handler(_msg: *const c_char) {}
 
-    extern "C" {
+    unsafe extern "C" {
         fn dlopen(filename: *const c_char, flag: c_int) -> *mut c_void;
         fn dlsym(handle: *mut c_void, symbol: *const c_char) -> *mut c_void;
     }

@@ -19,7 +19,7 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' asset: https: data:; media-src 'self' asset: https:; frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com; connect-src 'self' ipc: http://127.0.0.1:8888 https://accounts.spotify.com https://api.spotify.com;",
+      "csp": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.youtube.com https://s.ytimg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' asset: https: data:; media-src 'self' asset: https:; frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com; connect-src 'self' ipc: http://127.0.0.1:8888 https://accounts.spotify.com https://api.spotify.com;",
       "assetProtocol": {
         "enable": true,
         "scope": {
@@ -28,9 +28,7 @@
             "$CACHE/com.zech.crumusix/**/*",
             "$HOME/.cache/**/*",
             "$HOME/.cache/com.zech.crumusix/**/*",
-            "$HOME/Music/**/*",
-            "/home/zech/.cache/**/*",
-            "/home/zech/.cache/com.zech.crumusix/**/*"
+            "$HOME/Music/**/*"
           ],
           "requireLiteralLeadingDot": false
         }
@@ -39,7 +37,11 @@
   },
   "bundle": {
     "active": true,
-    "targets": "all",
+    "targets": [
+      "deb",
+      "rpm",
+      "nsis"
+    ],
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
