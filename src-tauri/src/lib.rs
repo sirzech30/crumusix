@@ -290,7 +290,7 @@ fn delete_playlist(app_handle: tauri::AppHandle, name: String) -> Result<(), Str
 
 #[tauri::command]
 async fn open_auth_window(app_handle: tauri::AppHandle, url: String) -> Result<(), String> {
-    tauri::WebviewWindowBuilder::new(
+    let window = tauri::WebviewWindowBuilder::new(
         &app_handle,
         "spotify-login",
         tauri::WebviewUrl::External(url.parse().map_err(|e| format!("Invalid URL: {}", e))?),
@@ -299,9 +299,14 @@ async fn open_auth_window(app_handle: tauri::AppHandle, url: String) -> Result<(
     .inner_size(500.0, 650.0)
     .resizable(false)
     .always_on_top(true)
+    .center()
     .build()
     .map_err(|e| format!("Failed to build auth window: {}", e))?;
-    
+
+    // Explicitly show and focus the window (important on Windows where WebView2 can be created but not visible)
+    window.show().map_err(|e| format!("Failed to show auth window: {}", e))?;
+    window.set_focus().map_err(|e| format!("Failed to focus auth window: {}", e))?;
+
     Ok(())
 }
 

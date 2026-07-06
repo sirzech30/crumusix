@@ -710,6 +710,15 @@ async function startSpotifyLoginFlow() {
             window.open(authUrl, '_blank');
           });
       });
+
+    // Fallback: if the native WebView2 window doesn't become visible/usable (common on Windows),
+    // open the URL in the system browser as well after a short delay
+    setTimeout(() => {
+      invoke('plugin:opener|open', { path: authUrl })
+        .catch(e => {
+          console.warn('Browser fallback already triggered or failed:', e);
+        });
+    }, 2000);
   } catch (err) {
     console.error('Spotify login flow initiation failed:', err);
     await alert('Failed to initiate login flow: ' + err);
