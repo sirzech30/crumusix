@@ -68,23 +68,11 @@ static OAUTH_SERVER_RUNNING: AtomicBool = AtomicBool::new(false);
 
 #[tauri::command]
 async fn start_oauth_server(app_handle: tauri::AppHandle) -> Result<String, String> {
-    // Safety check: if the login window is not active, reset the running state
-    if app_handle.get_webview_window("spotify-login").is_none() {
-        OAUTH_SERVER_RUNNING.store(false, Ordering::SeqCst);
-    }
-
     if OAUTH_SERVER_RUNNING.swap(true, Ordering::SeqCst) {
         return Err("OAuth authentication is already in progress. Please complete the login in your open browser window.".to_string());
     }
 
     let result = start_oauth_server_internal().await;
-    
-    // Auto-close the dedicated login window only on success
-    if result.is_ok() {
-        if let Some(auth_win) = app_handle.get_webview_window("spotify-login") {
-            auth_win.close().ok();
-        }
-    }
     
     OAUTH_SERVER_RUNNING.store(false, Ordering::SeqCst);
     result
@@ -289,24 +277,14 @@ fn delete_playlist(app_handle: tauri::AppHandle, name: String) -> Result<(), Str
 }
 
 #[tauri::command]
-async fn open_auth_window(app_handle: tauri::AppHandle, url: String) -> Result<(), String> {
-    let window = tauri::WebviewWindowBuilder::new(
-        &app_handle,
-        "spotify-login",
-        tauri::WebviewUrl::External(url.parse().map_err(|e| format!("Invalid URL: {}", e))?),
-    )
-    .title("Spotify Authentication")
-    .inner_size(500.0, 650.0)
-    .resizable(false)
-    .always_on_top(true)
-    .center()
-    .build()
-    .map_err(|e| format!("Failed to build auth window: {}", e))?;
-
-    // Explicitly show and focus the window (important on Windows where WebView2 can be created but not visible)
-    window.show().map_err(|e| format!("Failed to show auth window: {}", e))?;
-    window.set_focus().map_err(|e| format!("Failed to focus auth window: {}", e))?;
-
+async fn open_auth_window(url: String) -> Result<(), String> {
+    // Open the Spotify auth URL in the system browser directly.
+    // WebView popup windows are unreliable on Windows (flash and close immediately due to
+    // WebView2 lifecycle issues when the builder handle falls out of scope).
+    // The system browser is always available and works perfectly with the PKCE + local
+    // loopback redirect server flow.
+    tauri_plugin_opener::open_url(&url, None::<&str>)
+        .map_err(|e| format!("Failed to open URL in system browser: {}", e))?;
     Ok(())
 }
 

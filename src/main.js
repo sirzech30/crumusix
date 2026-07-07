@@ -700,25 +700,15 @@ async function startSpotifyLoginFlow() {
         finishAuthFlow();
       });
 
-    // 3. Open the dedicated native Tauri login pop-up window
+    // 3. Open the auth URL in the system browser via the Rust opener plugin.
+    //    This is more reliable than a WebView2 popup window, especially on Windows.
     invoke('open_auth_window', { url: authUrl })
       .catch(err => {
-        console.error('Failed to open native auth window, trying browser fallback:', err);
-        invoke('plugin:opener|open', { path: authUrl })
-          .catch(e => {
-            console.error('System browser launcher failed, trying standard fallback window.open:', e);
-            window.open(authUrl, '_blank');
-          });
+        console.error('Failed to open auth URL via Rust opener, trying window.open:', err);
+        // Direct fallback: open in the default browser via JavaScript.
+        // Tauri v2 webviews allow window.open to external URLs.
+        window.open(authUrl, '_blank');
       });
-
-    // Fallback: if the native WebView2 window doesn't become visible/usable (common on Windows),
-    // open the URL in the system browser as well after a short delay
-    setTimeout(() => {
-      invoke('plugin:opener|open', { path: authUrl })
-        .catch(e => {
-          console.warn('Browser fallback already triggered or failed:', e);
-        });
-    }, 2000);
   } catch (err) {
     console.error('Spotify login flow initiation failed:', err);
     await alert('Failed to initiate login flow: ' + err);
