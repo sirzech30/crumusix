@@ -19,13 +19,17 @@ use crate::Track;
 // globally while exposing only the thread-safe handle.
 static OUTPUT_STREAM_HANDLE: OnceLock<rodio::OutputStreamHandle> = OnceLock::new();
 
-pub fn get_output_stream_handle() -> &'static rodio::OutputStreamHandle {
-    OUTPUT_STREAM_HANDLE.get_or_init(|| {
-        let (stream, handle) = rodio::OutputStream::try_default()
-            .expect("Failed to open default CPAL hardware output stream");
-        std::mem::forget(stream); // Leak the stream to keep the decoders active forever
-        handle
-    })
+pub fn get_output_stream_handle() -> Result<&'static rodio::OutputStreamHandle, String> {
+    if let Some(handle) = OUTPUT_STREAM_HANDLE.get() {
+        return Ok(handle);
+    }
+    let (stream, handle) = rodio::OutputStream::try_default()
+        .map_err(|e| format!("Failed to open default audio output stream: {}", e))?;
+    std::mem::forget(stream); // Leak the stream to keep the decoders active forever
+    match OUTPUT_STREAM_HANDLE.set(handle) {
+        Ok(()) => Ok(OUTPUT_STREAM_HANDLE.get().unwrap()),
+        Err(_) => Ok(OUTPUT_STREAM_HANDLE.get().unwrap()), // race: another thread already set it
+    }
 }
 
 pub struct LocalProviderInner {
@@ -62,7 +66,7 @@ impl PlaybackProvider for LocalProvider {
             s.stop();
         }
         
-        let stream_handle = get_output_stream_handle();
+        let stream_handle = get_output_stream_handle()?;
         let sink = Sink::try_new(stream_handle)
             .map_err(|e| format!("Failed to create sink: {}", e))?;
             

@@ -128,7 +128,7 @@ impl PlaybackWorker {
     async fn run(&mut self) {
         // Check if cached credentials exist and auto-initialize
         if let Some(credentials) = get_cached_credentials(&self.app_handle) {
-            crate::log_info!("Found cached Spotify credentials. Auto-initializing native session...");
+            eprintln!("[Spotify Worker] Found cached Spotify credentials. Auto-initializing native session...");
             self.connect_session(credentials).await;
         }
 
@@ -136,7 +136,7 @@ impl PlaybackWorker {
         while let Some(command) = self.receiver.recv().await {
             match command {
                 PlaybackCommand::Init(token, settings) => {
-                    crate::log_info!("Initializing native Spotify session from OAuth token with settings: {:?}", settings);
+                    eprintln!("[Spotify Worker] Initializing native Spotify session from OAuth token with settings: {:?}", settings);
                     self.settings = settings;
                     let credentials = create_credentials_from_token(&token);
                     self.connect_session(credentials).await;
@@ -186,7 +186,7 @@ impl PlaybackWorker {
                     }
                 }
                 PlaybackCommand::UpdateSettings(new_settings) => {
-                    crate::log_info!("Updating backend Spotify settings dynamically: {:?}", new_settings);
+                    eprintln!("[Spotify Worker] Updating backend Spotify settings dynamically: {:?}", new_settings);
                     self.settings = new_settings;
                     
                     // Update MPRIS integration immediately
@@ -259,7 +259,7 @@ impl PlaybackWorker {
         match session.connect(credentials, true).await {
             Ok(()) => {
                 let dev_id = session.device_id().to_string();
-                crate::log_info!("Successfully connected native Spotify session. Device ID: {}", dev_id);
+                eprintln!("[Spotify Worker] Successfully connected native Spotify session. Device ID: {}", dev_id);
                 
                 self.session = Some(session.clone());
                 
@@ -268,13 +268,25 @@ impl PlaybackWorker {
                 player_config.position_update_interval = Some(std::time::Duration::from_millis(500));
                 player_config.normalisation = self.settings.normalisation;
                 
-                let backend = librespot::playback::audio_backend::find(None).expect("No audio backend found");
-                
+                // Try to find an audio backend; if none is available, log an error and bail
+                let backend_fn = match librespot::playback::audio_backend::find(None) {
+                    Some(b) => b,
+                    None => {
+                        eprintln!("[Spotify Worker] No native Spotify audio backend found on this system. Cannot initialize player.");
+                        self.state.write(|s| {
+                            s.is_connected = false;
+                            s.device_id = None;
+                        });
+                        emit_spotify_event(&self.app_handle, SpotifyEvent::StateChanged(self.state.read()));
+                        return;
+                    }
+                };
+
                 let player = Player::new(
                     player_config,
                     session,
                     Box::new(self.shared_volume.clone()),
-                    move || (backend)(None, AudioFormat::default())
+                    move || (backend_fn)(None, AudioFormat::default())
                 );
                 let mut events = player.get_player_event_channel();
 
@@ -361,7 +373,7 @@ impl PlaybackWorker {
                 });
             }
             Err(err) => {
-                crate::log_error!("Failed to connect native Spotify session: {}", err);
+                eprintln!("[Spotify Worker] Failed to connect native Spotify session: {}", err);
                 self.state.write(|s| {
                     s.is_connected = false;
                     s.device_id = None;
@@ -390,13 +402,13 @@ impl PlaybackWorker {
         let player = match self.player {
             Some(ref p) => p,
             None => {
-                crate::log_error!("Cannot play track: Spotify session is not connected!");
+                eprintln!("[Spotify Worker] Cannot play track: Spotify session is not connected!");
                 return;
             }
         };
 
         if let Ok(track_id) = SpotifyId::from_base62(track_id_str) {
-            crate::log_info!("Loading track base62 id natively: {}", track_id_str);
+            eprintln!("[Spotify Worker] Loading track base62 id natively: {}", track_id_str);
             player.load(SpotifyUri::Track { id: track_id }, true, 0);
             
             // Set current track state
@@ -416,7 +428,7 @@ impl PlaybackWorker {
             emit_spotify_event(&self.app_handle, SpotifyEvent::StateChanged(self.state.read()));
             self.sync_mpris_state();
         } else {
-            crate::log_error!("Invalid Spotify base62 track ID: {}", track_id_str);
+            eprintln!("[Spotify Worker] Invalid Spotify base62 track ID: {}", track_id_str);
         }
     }
 
@@ -429,7 +441,7 @@ impl PlaybackWorker {
             None => return,
         };
         if let Ok(track_id) = SpotifyId::from_base62(track_id_str) {
-            crate::log_info!("Preloading track base62 id natively: {}", track_id_str);
+            eprintln!("[Spotify Worker] Preloading track base62 id natively: {}", track_id_str);
             player.preload(SpotifyUri::Track { id: track_id });
         }
     }
@@ -489,12 +501,12 @@ impl PlaybackWorker {
             if attach_res.is_ok() {
                 self.mpris_controls = Some(controls);
                 self.sync_mpris_state();
-                crate::log_info!("Successfully registered system media control keys (MPRIS)!");
+                eprintln!("[Spotify Worker] Successfully registered system media control keys (MPRIS)!");
             } else {
-                crate::log_error!("Failed to attach media controls callback");
+                eprintln!("[Spotify Worker] Failed to attach media controls callback");
             }
         } else {
-            crate::log_error!("Failed to initialize media controls");
+            eprintln!("[Spotify Worker] Failed to initialize media controls");
         }
     }
 
