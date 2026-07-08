@@ -217,27 +217,33 @@ impl FileLogger {
 
 #[macro_export]
 macro_rules! log_info {
-    ($($arg:tt)*) => {
+    ($($arg:tt)*) => {{
+        let msg = format!($($arg)*);
+        eprintln!("[INFO] {}", msg);
         if let Some(logger) = $crate::diagnostics::FileLogger::global() {
-            logger.log("INFO", &format!($($arg)*));
+            logger.log("INFO", &msg);
         }
-    };
+    }};
 }
 
 #[macro_export]
 macro_rules! log_warn {
-    ($($arg:tt)*) => {
+    ($($arg:tt)*) => {{
+        let msg = format!($($arg)*);
+        eprintln!("[WARN] {}", msg);
         if let Some(logger) = $crate::diagnostics::FileLogger::global() {
-            logger.log("WARN", &format!($($arg)*));
+            logger.log("WARN", &msg);
         }
-    };
+    }};
 }
 
 #[macro_export]
 macro_rules! log_error {
-    ($($arg:tt)*) => {
+    ($($arg:tt)*) => {{
+        let msg = format!($($arg)*);
+        eprintln!("[ERROR] {}", msg);
         if let Some(logger) = $crate::diagnostics::FileLogger::global() {
-            logger.log("ERROR", &format!($($arg)*));
+            logger.log("ERROR", &msg);
         }
-    };
+    }};
 }

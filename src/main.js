@@ -2778,7 +2778,7 @@ async function playTrackFromPlaylistNative(tracks, idx) {
 }
 
 function renderQueueSidebar() {
-  const container = document.getElementById('queue-items-list');
+  const container = document.getElementById('queue-list-container');
   if (!container) return;
   container.innerHTML = '';
 

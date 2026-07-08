@@ -1,4 +1,4 @@
-use tauri::Manager;
+use tauri::{Emitter, Manager};
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
@@ -15,7 +15,6 @@ pub mod diagnostics;
 pub mod stats;
 pub mod backup;
 pub mod config;
-
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct YouTubeSearchResult {
@@ -67,7 +66,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 static OAUTH_SERVER_RUNNING: AtomicBool = AtomicBool::new(false);
 
 #[tauri::command]
-async fn start_oauth_server(app_handle: tauri::AppHandle) -> Result<String, String> {
+async fn start_oauth_server(_app_handle: tauri::AppHandle) -> Result<String, String> {
     if OAUTH_SERVER_RUNNING.swap(true, Ordering::SeqCst) {
         return Err("OAuth authentication is already in progress. Please complete the login in your open browser window.".to_string());
     }
@@ -276,6 +275,19 @@ fn delete_playlist(app_handle: tauri::AppHandle, name: String) -> Result<(), Str
     Ok(())
 }
 
+/// Called by the frontend once its JavaScript bundle has fully initialised.
+/// This signals the Rust backend to show the application window and inform
+/// the renderer that it can dismiss the splash screen.
+#[tauri::command]
+async fn ready(handle: tauri::AppHandle) -> Result<(), String> {
+    if let Some(w) = handle.get_webview_window("main") {
+        let _ = w.show();
+        let _ = w.set_focus();
+    }
+    let _ = handle.emit("app-ready", ());
+    Ok(())
+}
+
 #[tauri::command]
 async fn open_auth_window(url: String) -> Result<(), String> {
     // Open the Spotify auth URL in the system browser directly.
@@ -406,7 +418,13 @@ pub fn run() {
             // Initialize SQLite library database
             let cache_dir = cache::storage::get_cache_dir(&app_handle);
             let sqlite_path = cache_dir.join("library_sqlite.db");
-            let sqlite_conn = cache::db::init_sqlite(&sqlite_path).expect("Failed to initialize SQLite library database");
+            let sqlite_conn = match cache::db::init_sqlite(&sqlite_path) {
+                Ok(conn) => conn,
+                Err(e) => {
+                    log_error!("Failed to initialize SQLite library database: {}", e);
+                    return Err(Box::new(std::io::Error::new(std::io::ErrorKind::Other, e)).into());
+                }
+            };
             
             // Auto-evict expired metadata cache rows on startup
             if let Ok(deleted_rows) = cache::metadata::cache_purge_expired(&sqlite_conn) {
@@ -439,7 +457,13 @@ pub fn run() {
             // Spawn hardware audio device hot-swap monitor
             playback::device::AudioDeviceManager::global().start_hotplug_monitor(app_handle.clone());
 
-            let window = app.get_webview_window("main").unwrap();
+            let window = match app.get_webview_window("main") {
+                Some(w) => w,
+                None => {
+                    log_error!("Main webview window not found at startup. Aborting setup.");
+                    return Err(Box::new(std::io::Error::new(std::io::ErrorKind::NotFound, "main window not found")).into());
+                }
+            };
             let window_clone = window.clone();
             window.on_window_event(move |event| {
                 if let tauri::WindowEvent::CloseRequested { api, .. } = event {
@@ -449,15 +473,34 @@ pub fn run() {
             });
 
             // 1. Build System Tray Menu
-            let quit_i = tauri::menu::MenuItem::with_id(app, "quit", "Quit", true, None::<&str>).unwrap();
-            let show_i = tauri::menu::MenuItem::with_id(app, "show", "Show Player", true, None::<&str>).unwrap();
+            let quit_i = match tauri::menu::MenuItem::with_id(app, "quit", "Quit", true, None::<&str>) {
+                Ok(item) => item,
+                Err(e) => {
+                    log_error!("Failed to create quit menu item: {}", e);
+                    return Err(Box::new(e).into());
+                }
+            };
+            let show_i = match tauri::menu::MenuItem::with_id(app, "show", "Show Player", true, None::<&str>) {
+                Ok(item) => item,
+                Err(e) => {
+                    log_error!("Failed to create show menu item: {}", e);
+                    return Err(Box::new(e).into());
+                }
+            };
             
-            let menu = tauri::menu::Menu::with_items(app, &[&show_i, &quit_i]).unwrap();
+            let menu = match tauri::menu::Menu::with_items(app, &[&show_i, &quit_i]) {
+                Ok(m) => m,
+                Err(e) => {
+                    log_error!("Failed to build tray menu: {}", e);
+                    return Err(Box::new(e).into());
+                }
+            };
             
             // 2. Build Tray Icon
             let icon = tauri::include_image!("icons/32x32.png");
             
-            let _tray = tauri::tray::TrayIconBuilder::new()
+            // Build tray icon (non-essential; log warning on failure)
+            if let Err(e) = tauri::tray::TrayIconBuilder::new()
                 .icon(icon)
                 .menu(&menu)
                 .on_menu_event(move |app_handle, event| {
@@ -475,11 +518,15 @@ pub fn run() {
                     }
                 })
                 .build(app)
-                .expect("Failed to build tray icon");
+            {
+                log_warn!("Failed to build tray icon (non-fatal): {}", e);
+            }
             diagnostics::StartupProfiler::global().record_milestone("System Tray Configured");
 
-            spotify::worker::PlaybackWorker::spawn(app_handle, shared_state_clone, rx, tx);
+            spotify::worker::PlaybackWorker::spawn(app_handle.clone(), shared_state_clone, rx, tx);
             diagnostics::StartupProfiler::global().record_milestone("App Setup Complete");
+
+            // Window will be shown when the frontend calls the `ready` command
             Ok(())
         })
         .manage(command_sender)
@@ -504,6 +551,7 @@ pub fn run() {
             save_playlist,
             delete_playlist,
             toggle_mini_player,
+            ready,
             get_audio_output_device,
             // Native Spotify commands
             spotify::commands::spotify_init_native,

@@ -10,6 +10,7 @@ use librespot::playback::config::{PlayerConfig, AudioFormat};
 use librespot::playback::player::{Player, PlayerEvent};
 use librespot::playback::mixer::VolumeGetter;
 use souvlaki::{MediaControlEvent, MediaControls, MediaMetadata, PlatformConfig};
+use crate::{log_info, log_warn, log_error};
 
 #[derive(Clone)]
 pub struct SharedVolume {
@@ -128,7 +129,7 @@ impl PlaybackWorker {
     async fn run(&mut self) {
         // Check if cached credentials exist and auto-initialize
         if let Some(credentials) = get_cached_credentials(&self.app_handle) {
-            eprintln!("[Spotify Worker] Found cached Spotify credentials. Auto-initializing native session...");
+            log_info!("[Spotify Worker] Found cached Spotify credentials. Auto-initializing native session...");
             self.connect_session(credentials).await;
         }
 
@@ -136,7 +137,7 @@ impl PlaybackWorker {
         while let Some(command) = self.receiver.recv().await {
             match command {
                 PlaybackCommand::Init(token, settings) => {
-                    eprintln!("[Spotify Worker] Initializing native Spotify session from OAuth token with settings: {:?}", settings);
+                    log_info!("[Spotify Worker] Initializing native Spotify session from OAuth token with settings: {:?}", settings);
                     self.settings = settings;
                     let credentials = create_credentials_from_token(&token);
                     self.connect_session(credentials).await;
@@ -186,7 +187,7 @@ impl PlaybackWorker {
                     }
                 }
                 PlaybackCommand::UpdateSettings(new_settings) => {
-                    eprintln!("[Spotify Worker] Updating backend Spotify settings dynamically: {:?}", new_settings);
+                    log_info!("[Spotify Worker] Updating backend Spotify settings dynamically: {:?}", new_settings);
                     self.settings = new_settings;
                     
                     // Update MPRIS integration immediately
@@ -259,7 +260,7 @@ impl PlaybackWorker {
         match session.connect(credentials, true).await {
             Ok(()) => {
                 let dev_id = session.device_id().to_string();
-                eprintln!("[Spotify Worker] Successfully connected native Spotify session. Device ID: {}", dev_id);
+                log_info!("[Spotify Worker] Successfully connected native Spotify session. Device ID: {}", dev_id);
                 
                 self.session = Some(session.clone());
                 
@@ -272,7 +273,7 @@ impl PlaybackWorker {
                 let backend_fn = match librespot::playback::audio_backend::find(None) {
                     Some(b) => b,
                     None => {
-                        eprintln!("[Spotify Worker] No native Spotify audio backend found on this system. Cannot initialize player.");
+                        log_error!("[Spotify Worker] No native Spotify audio backend found on this system. Cannot initialize player.");
                         self.state.write(|s| {
                             s.is_connected = false;
                             s.device_id = None;
@@ -372,8 +373,8 @@ impl PlaybackWorker {
                     }
                 });
             }
-            Err(err) => {
-                eprintln!("[Spotify Worker] Failed to connect native Spotify session: {}", err);
+                    Err(err) => {
+                log_error!("[Spotify Worker] Failed to connect native Spotify session: {}", err);
                 self.state.write(|s| {
                     s.is_connected = false;
                     s.device_id = None;
@@ -402,13 +403,13 @@ impl PlaybackWorker {
         let player = match self.player {
             Some(ref p) => p,
             None => {
-                eprintln!("[Spotify Worker] Cannot play track: Spotify session is not connected!");
+                log_warn!("[Spotify Worker] Cannot play track: Spotify session is not connected!");
                 return;
             }
         };
 
         if let Ok(track_id) = SpotifyId::from_base62(track_id_str) {
-            eprintln!("[Spotify Worker] Loading track base62 id natively: {}", track_id_str);
+            log_info!("[Spotify Worker] Loading track base62 id natively: {}", track_id_str);
             player.load(SpotifyUri::Track { id: track_id }, true, 0);
             
             // Set current track state
@@ -428,7 +429,7 @@ impl PlaybackWorker {
             emit_spotify_event(&self.app_handle, SpotifyEvent::StateChanged(self.state.read()));
             self.sync_mpris_state();
         } else {
-            eprintln!("[Spotify Worker] Invalid Spotify base62 track ID: {}", track_id_str);
+            log_warn!("[Spotify Worker] Invalid Spotify base62 track ID: {}", track_id_str);
         }
     }
 
@@ -441,7 +442,7 @@ impl PlaybackWorker {
             None => return,
         };
         if let Ok(track_id) = SpotifyId::from_base62(track_id_str) {
-            eprintln!("[Spotify Worker] Preloading track base62 id natively: {}", track_id_str);
+            log_info!("[Spotify Worker] Preloading track base62 id natively: {}", track_id_str);
             player.preload(SpotifyUri::Track { id: track_id });
         }
     }
@@ -501,12 +502,12 @@ impl PlaybackWorker {
             if attach_res.is_ok() {
                 self.mpris_controls = Some(controls);
                 self.sync_mpris_state();
-                eprintln!("[Spotify Worker] Successfully registered system media control keys (MPRIS)!");
+                log_info!("[Spotify Worker] Successfully registered system media control keys (MPRIS)!");
             } else {
-                eprintln!("[Spotify Worker] Failed to attach media controls callback");
+                log_warn!("[Spotify Worker] Failed to attach media controls callback");
             }
         } else {
-            eprintln!("[Spotify Worker] Failed to initialize media controls");
+            log_warn!("[Spotify Worker] Failed to initialize media controls");
         }
     }
 

@@ -1,5 +1,6 @@
 use tauri::AppHandle;
 use crate::cache::storage::get_cache_dir;
+use crate::log_warn;
 
 pub async fn get_cached_artwork(app_handle: &AppHandle, url: &str, identifier: &str) -> Result<String, String> {
     if url.is_empty() {
@@ -26,7 +27,7 @@ pub async fn get_cached_artwork(app_handle: &AppHandle, url: &str, identifier: &
             }
         }
         Err(e) => {
-            eprintln!("Failed to download artwork from {}: {}", url, e);
+            log_warn!("Failed to download artwork from {}: {}", url, e);
         }
     }
 

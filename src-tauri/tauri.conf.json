@@ -15,6 +15,7 @@
         "width": 1100,
         "height": 720,
         "decorations": false,
+        "visible": false,
         "additionalBrowserArgs": "--js-flags=--max-old-space-size=512 --gc-interval=100 --disable-gpu-shader-disk-cache"
       }
     ],
